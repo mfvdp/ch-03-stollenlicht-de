@@ -1,0 +1,36 @@
+{
+  "name": "stollenlicht",
+  "description": "Abenteuer in einer Grube bei Nacht für den Calliope mini 3 mit GameKit: Finde fünf Sicherungen, haushalte mit der Lampe und pfeife nach dem Wartungsroboter Brummi. Mit Intro und Training.",
+  "license": "MIT",
+  "dependencies": {
+    "device": "*",
+    "hw---n3": "*"
+  },
+  "files": [
+    "regeln.ts",
+    "bild.ts",
+    "kino.ts",
+    "klang.ts",
+    "main.ts",
+    "README.md"
+  ],
+  "preferredEditor": "tsprj",
+  "palette": [
+    "#000000",
+    "#eaf3dd",
+    "#e65042",
+    "#a92d3f",
+    "#dd8b45",
+    "#f1cf7c",
+    "#493953",
+    "#78a297",
+    "#253843",
+    "#77c5c4",
+    "#43616a",
+    "#151f2b",
+    "#a3b5a0",
+    "#625958",
+    "#353e40",
+    "#080c13"
+  ]
+}

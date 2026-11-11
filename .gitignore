@@ -1,0 +1,15 @@
+node_modules/
+pxt_modules/
+.mkc-cache/
+built/
+
+# Local credentials and editor/OS files
+.env
+.env.*
+!.env.example
+*.pem
+.DS_Store
+*.log
+
+# Diagnostic assembly copied by local build tools
+release/*.asm
