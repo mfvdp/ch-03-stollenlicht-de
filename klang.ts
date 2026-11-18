@@ -18,7 +18,9 @@ namespace NachtKlang {
     const klangZeitenMs = [700, 5300, 7200, 10800, 15500, 19000, 21300, 23400, 25600, 26950, 28500, 34600]
     const klangNummern = [15, 3, 16, 17, 19, 13, 30, 22, 23, 29, 24, 18]
     let musikNr = 0
+    // Im Speicher liegt immer nur der nächste Abschnitt der Musik.
     let musik: Buffer[] = []
+    let fertigerAbschnitt = -1
     // 180 Schläge pro Minute: 36 Achtelnoten pro Abschnitt von sechs Sekunden. Die Bildzeiten bleiben fest.
     const achtelMs = 1000 / 6
     // Fünf Stimmen lassen drei Kanäle für den Studioakkord frei.
@@ -145,13 +147,16 @@ namespace NachtKlang {
         }
         return daten
     }
-    function komponiere() {
+    // Baut die fünf Stimmen EINES Abschnitts in musik (etwa 5 KB). Die ganze Musik auf einmal brauchte etwa 55 KB,
+    // mehr als der Calliope mini 3 neben dem Bildschirm und dem Bergwerk frei hat (dann blieb der Bildschirm schwarz).
+    function komponiere(abschnitt: number) {
         musik=[]
+        fertigerAbschnitt=abschnitt
         // Töne aus D-Dur. Grundtöne der Akkorde je Abschnitt: D D G A D H G A D A D.
         const grundtoene=[147,147,196,220,147,247,196,220,147,220,147]
         const terzen=[185,185,247,277,185,294,247,277,185,277,185]
         const quinten=[220,220,294,330,220,370,294,330,220,330,220]
-        for(let abschnitt=0;abschnitt<musikZeitenMs.length;abschnitt++) {
+        if(abschnitt>=0 && abschnitt<musikZeitenMs.length) {
             let grundton=grundtoene[abschnitt], terz=terzen[abschnitt], quinte=quinten[abschnitt]
             let achtelAnzahl=Math.round(musikLaengenMs[abschnitt]/achtelMs)
             let bass: number[]=[], bassLaengen: number[]=[], arpeggio: number[]=[], ticks: number[]=[]
@@ -275,7 +280,7 @@ namespace NachtKlang {
         akkordTief=baueStudioAkkord(370,440,587,400)
         akkordHoch=baueStudioAkkord(440,587,740,340)
         besetztBisMs = 0; vorrang = 0; vorherZustand = -1; vorherAlterMs = -1
-        introKlangNr = 0; musikNr = 0; verstummt = false; musik=[]
+        introKlangNr = 0; musikNr = 0; verstummt = false; musik=[]; fertigerAbschnitt=-1
         naechsteAtmosphaereMs=0; naechstesSummenMs=0; atmosphaerenNr=0
         // Leises Summen, hohe Tropfen, sanfte Luft, ein zweites Tropfenmuster; nichts unter 100 Hertz.
         atmosphaeren = [baueHuellkurve(3,220,220,80,900,2600),
@@ -288,7 +293,7 @@ namespace NachtKlang {
         trittMetall=baueHuellkurve(18,1200,220,155,12,130)
         trittWasserRennen=baueHuellkurve(18,980,140,190,18,190)
         trittMetallRennen=baueHuellkurve(18,1400,180,220,12,160)
-        komponiere()
+        // Die Musik entsteht Abschnitt für Abschnitt, während das Intro läuft.
     }
 
     function stoppe() {
@@ -321,6 +326,7 @@ namespace NachtKlang {
             stoppe()
             introKlangNr = 0
             musikNr = 0
+            musik = []; fertigerAbschnitt = -1
             naechsteAtmosphaereMs=jetztMs+1200
             naechstesSummenMs=jetztMs+600
         }
@@ -338,9 +344,16 @@ namespace NachtKlang {
             while(musikNr<musikZeitenMs.length && Nacht.alterMs>=musikZeitenMs[musikNr]) {
                 let nr=musikNr++
                 if(Nacht.alterMs-musikZeitenMs[nr]<150) {
-                    for(let stimme=0;stimme<5;stimme++) music.playInstructions(0,musik[nr*5+stimme])
+                    if(fertigerAbschnitt!=nr) komponiere(nr)
+                    // Der Mischer hält jeden Puffer fest, solange er spielt; musik darf schon zum
+                    // nächsten Abschnitt weitergehen.
+                    for(let stimme=0;stimme<5;stimme++) music.playInstructions(0,musik[stimme])
+                    musik=[]; fertigerAbschnitt=-1
                 }
             }
+            // Den nächsten Abschnitt gleich nach dem vorigen Einsatz bauen, Sekunden vor seiner Zeit; sein Einsatz
+            // startet dann nur den Ton.
+            if(musikNr<musikZeitenMs.length && fertigerAbschnitt!=musikNr) komponiere(musikNr)
             // Springt die Zeit, werden alte Klänge verworfen, statt sie alle auf einmal nachzuspielen.
             while (introKlangNr < klangZeitenMs.length
                 && Nacht.alterMs >= Nacht.introEchtZeitMs(klangZeitenMs[introKlangNr])) {
